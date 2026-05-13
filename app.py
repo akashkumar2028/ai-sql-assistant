@@ -15,7 +15,8 @@ DB_CONFIG = {
     "host":     os.environ.get("DB_HOST",     "localhost"),
     "user":     os.environ.get("DB_USER",     "root"),
     "password": os.environ.get("DB_PASSWORD", ""),
-    "database": os.environ.get("DB_NAME",     "sql_assistant")
+    "database": os.environ.get("DB_NAME",     "sql_assistant"),
+    "port":     int(os.environ.get("DB_PORT", 3306))
 }
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
