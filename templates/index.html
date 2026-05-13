@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI SQL Assistant</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{min-height:100vh;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);font-family:'Segoe UI',sans-serif;color:#fff}
+
+  /* Navbar */
+  .navbar{display:flex;align-items:center;justify-content:space-between;padding:16px 36px;background:rgba(255,255,255,0.05);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.1)}
+  .logo{font-size:1.3rem;font-weight:700;background:linear-gradient(90deg,#a78bfa,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .nav-right{display:flex;align-items:center;gap:12px}
+  .badge{background:rgba(52,211,153,0.15);color:#34d399;border:1px solid rgba(52,211,153,0.4);padding:4px 14px;border-radius:20px;font-size:0.75rem}
+
+  /* Stats */
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:24px 36px 12px}
+  .sc{background:rgba(255,255,255,0.07);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:18px;text-align:center;transition:transform 0.2s}
+  .sc:hover{transform:translateY(-3px)}
+  .sc-icon{font-size:1.6rem;margin-bottom:6px}
+  .sc-val{font-size:1.6rem;font-weight:700}
+  .sc-lbl{font-size:0.72rem;color:rgba(255,255,255,0.45);margin-top:3px}
+  .sc:nth-child(1) .sc-val{color:#a78bfa}
+  .sc:nth-child(2) .sc-val{color:#60a5fa}
+  .sc:nth-child(3) .sc-val{color:#34d399}
+  .sc:nth-child(4) .sc-val{color:#fbbf24}
+
+  /* Layout */
+  .main{display:grid;grid-template-columns:1fr 280px;gap:20px;padding:16px 36px 36px}
+
+  /* Panels */
+  .panel{background:rgba(255,255,255,0.07);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:22px}
+  .sec-title{font-size:0.65rem;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px}
+
+  /* Query input */
+  .query-input{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(167,139,250,0.35);border-radius:12px;padding:14px 16px;color:#fff;font-size:0.95rem;resize:none;outline:none;transition:border 0.2s;font-family:inherit}
+  .query-input:focus{border-color:#a78bfa}
+  .query-input::placeholder{color:rgba(255,255,255,0.25)}
+
+  /* Chips */
+  .chips-label{font-size:0.7rem;color:rgba(255,255,255,0.35);margin:12px 0 6px}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}
+  .chip{padding:5px 12px;border-radius:18px;font-size:0.72rem;cursor:pointer;border:1px solid;transition:all 0.2s;user-select:none}
+  .chip:hover{transform:scale(1.05)}
+  .c-b{background:rgba(96,165,250,0.12);color:#60a5fa;border-color:rgba(96,165,250,0.35)}
+  .c-g{background:rgba(52,211,153,0.12);color:#34d399;border-color:rgba(52,211,153,0.35)}
+  .c-a{background:rgba(251,191,36,0.12);color:#fbbf24;border-color:rgba(251,191,36,0.35)}
+  .c-r{background:rgba(248,113,113,0.12);color:#f87171;border-color:rgba(248,113,113,0.35)}
+  .c-p{background:rgba(167,139,250,0.12);color:#a78bfa;border-color:rgba(167,139,250,0.35)}
+
+  .run-btn{width:100%;padding:13px;background:linear-gradient(135deg,#a78bfa,#60a5fa);border:none;border-radius:12px;color:#fff;font-size:0.95rem;font-weight:600;cursor:pointer;transition:opacity 0.2s,transform 0.2s}
+  .run-btn:hover{opacity:0.88;transform:translateY(-1px)}
+  .run-btn:disabled{opacity:0.45;cursor:not-allowed;transform:none}
+
+  /* Loading */
+  .loading{text-align:center;padding:18px;color:rgba(255,255,255,0.4);font-size:0.88rem;display:none}
+  .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(167,139,250,0.3);border-top-color:#a78bfa;border-radius:50%;animation:spin 0.7s linear infinite;margin-right:8px;vertical-align:middle}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* Results */
+  .results-section{margin-top:18px;display:none}
+  .sql-box{background:rgba(0,0,0,0.35);border:1px solid rgba(167,139,250,0.25);border-radius:12px;padding:14px 16px;font-family:'Courier New',monospace;font-size:0.82rem;color:#c4b5fd;margin-bottom:12px;word-break:break-all;line-height:1.6}
+  .exp-box{background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.2);border-radius:12px;padding:12px 16px;font-size:0.83rem;color:#6ee7b7;margin-bottom:14px;line-height:1.5}
+  .affected-box{background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);border-radius:12px;padding:14px;color:#fbbf24;font-size:0.9rem;text-align:center}
+  .error-box{background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.25);border-radius:12px;padding:14px;color:#fca5a5;font-size:0.85rem}
+  .empty-box{text-align:center;padding:20px;color:rgba(255,255,255,0.3);font-size:0.85rem}
+
+  /* Result meta */
+  .result-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .result-count{font-size:0.75rem;color:rgba(255,255,255,0.4)}
+  .export-btn{background:rgba(96,165,250,0.12);color:#60a5fa;border:1px solid rgba(96,165,250,0.3);padding:4px 12px;border-radius:8px;font-size:0.72rem;cursor:pointer;transition:background 0.2s}
+  .export-btn:hover{background:rgba(96,165,250,0.2)}
+
+  /* Table */
+  .table-wrapper{overflow-x:auto;border-radius:12px;border:1px solid rgba(255,255,255,0.08)}
+  table{width:100%;border-collapse:collapse;font-size:0.82rem}
+  thead th{background:rgba(167,139,250,0.18);padding:10px 14px;text-align:left;color:#a78bfa;font-weight:600;border-bottom:1px solid rgba(255,255,255,0.08);white-space:nowrap}
+  tbody tr{border-bottom:1px solid rgba(255,255,255,0.04);transition:background 0.15s}
+  tbody tr:hover{background:rgba(255,255,255,0.04)}
+  tbody td{padding:9px 14px;color:rgba(255,255,255,0.82)}
+  tbody tr:last-child{border-bottom:none}
+
+  /* Sidebar */
+  .sidebar{display:flex;flex-direction:column;gap:16px}
+  .hist-item{padding:9px 12px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);font-size:0.75rem;color:rgba(255,255,255,0.65);margin-bottom:7px;cursor:pointer;transition:background 0.2s;line-height:1.4}
+  .hist-item:hover{background:rgba(255,255,255,0.09)}
+  .hbadge{display:inline-block;padding:2px 7px;border-radius:5px;font-size:0.65rem;font-weight:600;margin-right:5px}
+  .b-SELECT{background:rgba(96,165,250,0.2);color:#60a5fa}
+  .b-INSERT{background:rgba(52,211,153,0.2);color:#34d399}
+  .b-UPDATE{background:rgba(251,191,36,0.2);color:#fbbf24}
+  .b-DELETE{background:rgba(248,113,113,0.2);color:#f87171}
+  .b-ERROR{background:rgba(156,163,175,0.2);color:#9ca3af}
+
+  .schema-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.78rem;color:rgba(255,255,255,0.65)}
+  .schema-row:last-child{border-bottom:none}
+  .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+  .no-history{color:rgba(255,255,255,0.25);font-size:0.78rem;text-align:center;padding:10px 0}
+</style>
+</head>
+<body>
+
+<div class="navbar">
+  <div class="logo">⚡ AI SQL Assistant</div>
+  <div class="nav-right">
+    <div class="badge">● MySQL Connected</div>
+  </div>
+</div>
+
+<div class="stats-row">
+  <div class="sc"><div class="sc-icon">👥</div><div class="sc-val" id="s-customers">—</div><div class="sc-lbl">Customers</div></div>
+  <div class="sc"><div class="sc-icon">📦</div><div class="sc-val" id="s-products">—</div><div class="sc-lbl">Products</div></div>
+  <div class="sc"><div class="sc-icon">🛒</div><div class="sc-val" id="s-orders">—</div><div class="sc-lbl">Orders</div></div>
+  <div class="sc"><div class="sc-icon">💰</div><div class="sc-val" id="s-revenue">—</div><div class="sc-lbl">Total Revenue</div></div>
+</div>
+
+<div class="main">
+  <div>
+    <div class="panel">
+      <div class="sec-title">Ask anything in plain English</div>
+      <textarea class="query-input" id="questionInput" rows="3"
+        placeholder="e.g. Show all customers with the products they ordered..."></textarea>
+
+      <div class="chips-label">Quick queries —</div>
+      <div class="chips">
+        <span class="chip c-b" onclick="setQ('show all customers')">👥 All customers</span>
+        <span class="chip c-b" onclick="setQ('show all customers with the products they ordered')">🔗 Customers + products</span>
+        <span class="chip c-p" onclick="setQ('show top 3 customers by total spending')">🏆 Top spenders</span>
+        <span class="chip c-b" onclick="setQ('show all products in Electronics category')">📦 Electronics</span>
+        <span class="chip c-p" onclick="setQ('show total revenue from all orders')">💰 Total revenue</span>
+        <span class="chip c-p" onclick="setQ('show how many orders each customer placed')">📊 Orders per customer</span>
+        <span class="chip c-p" onclick="setQ('show most popular product by number of orders')">⭐ Most popular product</span>
+        <span class="chip c-p" onclick="setQ('show all orders with customer name and product name and total price')">🧾 Full order details</span>
+        <span class="chip c-g" onclick="setQ('add a new customer named Kiran with email kiran@gmail.com from Pune with customer_id 6')">➕ Insert customer</span>
+        <span class="chip c-a" onclick="setQ('update Akash Kumar city to Bangalore')">✏️ Update record</span>
+        <span class="chip c-r" onclick="setQ('delete customer with customer_id 6')">🗑️ Delete record</span>
+        <span class="chip c-b" onclick="setQ('show products that have never been ordered')">🚫 Unordered products</span>
+      </div>
+
+      <button class="run-btn" id="runBtn" onclick="runQuery()">⚡ Run Query</button>
+    </div>
+
+    <div class="loading" id="loading">
+      <span class="spinner"></span> AI is generating your query...
+    </div>
+
+    <div class="results-section" id="resultsSection">
+      <div class="panel">
+        <div class="sec-title">Generated SQL</div>
+        <div class="sql-box" id="sqlBox"></div>
+        <div class="exp-box" id="expBox"></div>
+        <div class="result-meta" id="resultMeta" style="display:none">
+          <span class="result-count" id="resultCount"></span>
+          <button class="export-btn" onclick="exportCSV()">⬇ Export CSV</button>
+        </div>
+        <div id="tableContainer"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="panel">
+      <div class="sec-title">Query History</div>
+      <div id="historyList"><div class="no-history">No queries yet</div></div>
+    </div>
+    <div class="panel">
+      <div class="sec-title">Database Schema</div>
+      <div class="schema-row"><div class="dot" style="background:#a78bfa"></div><div><strong>customers</strong><br><span style="font-size:0.7rem;color:rgba(255,255,255,0.4)">id · name · email · city</span></div></div>
+      <div class="schema-row"><div class="dot" style="background:#60a5fa"></div><div><strong>products</strong><br><span style="font-size:0.7rem;color:rgba(255,255,255,0.4)">id · name · category · price</span></div></div>
+      <div class="schema-row"><div class="dot" style="background:#34d399"></div><div><strong>orders</strong><br><span style="font-size:0.7rem;color:rgba(255,255,255,0.4)">id · customer_id · product_id · qty · date</span></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let history = [];
+  let lastColumns = [];
+  let lastRows = [];
+
+  fetch('/stats').then(r=>r.json()).then(d=>{
+    document.getElementById('s-customers').textContent = d.customers;
+    document.getElementById('s-products').textContent  = d.products;
+    document.getElementById('s-orders').textContent    = d.orders;
+    document.getElementById('s-revenue').textContent   = '₹'+d.revenue.toLocaleString('en-IN');
+  });
+
+  function setQ(text){
+    document.getElementById('questionInput').value = text;
+    document.getElementById('questionInput').focus();
+  }
+
+  async function runQuery(){
+    const question = document.getElementById('questionInput').value.trim();
+    if(!question) return;
+
+    document.getElementById('runBtn').disabled     = true;
+    document.getElementById('loading').style.display      = 'block';
+    document.getElementById('resultsSection').style.display = 'none';
+
+    try{
+      const res  = await fetch('/query',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question})});
+      const data = await res.json();
+
+      document.getElementById('sqlBox').textContent = data.sql || 'Could not generate SQL';
+      document.getElementById('expBox').textContent = '💡 ' + (data.explanation || 'No explanation available');
+
+      const container  = document.getElementById('tableContainer');
+      const resultMeta = document.getElementById('resultMeta');
+
+      if(data.result.error){
+        container.innerHTML = `<div class="error-box">❌ ${data.result.error}</div>`;
+        resultMeta.style.display = 'none';
+      } else if(data.result.type === 'SELECT'){
+        lastColumns = data.result.columns;
+        lastRows    = data.result.rows;
+        if(data.result.rows.length === 0){
+          container.innerHTML = '<div class="empty-box">No results found for this query.</div>';
+          resultMeta.style.display = 'none';
+        } else {
+          container.innerHTML = buildTable(data.result.columns, data.result.rows);
+          document.getElementById('resultCount').textContent = `${data.result.rows.length} row(s) returned`;
+          resultMeta.style.display = 'flex';
+        }
+        refreshStats();
+      } else {
+        container.innerHTML = `<div class="affected-box">✅ ${data.result.type} successful — ${data.result.affected_rows} row(s) affected</div>`;
+        resultMeta.style.display = 'none';
+        refreshStats();
+      }
+
+      document.getElementById('resultsSection').style.display = 'block';
+
+      const sqlType = (data.sql||'').trim().split(' ')[0].toUpperCase();
+      addHistory(question, sqlType||'ERROR');
+
+    } catch(e){
+      document.getElementById('sqlBox').textContent = 'Server error';
+      document.getElementById('expBox').textContent = e.message;
+      document.getElementById('tableContainer').innerHTML = `<div class="error-box">❌ ${e.message}</div>`;
+      document.getElementById('resultsSection').style.display = 'block';
+    }
+
+    document.getElementById('runBtn').disabled    = false;
+    document.getElementById('loading').style.display     = 'none';
+  }
+
+  function buildTable(columns, rows){
+    let html = '<div class="table-wrapper"><table><thead><tr>';
+    columns.forEach(c => html += `<th>${c}</th>`);
+    html += '</tr></thead><tbody>';
+    rows.forEach(row => {
+      html += '<tr>';
+      row.forEach(cell => html += `<td>${cell === null ? '<span style="color:rgba(255,255,255,0.25)">NULL</span>' : cell}</td>`);
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+    return html;
+  }
+
+  function addHistory(question, sqlType){
+    history.unshift({question, sqlType});
+    const list = document.getElementById('historyList');
+    list.innerHTML = history.slice(0,10).map(h=>`
+      <div class="hist-item" onclick="setQ('${h.question.replace(/'/g,"\\'")}')">
+        <span class="hbadge b-${h.sqlType}">${h.sqlType}</span>
+        ${h.question.length>45 ? h.question.slice(0,45)+'…' : h.question}
+      </div>
+    `).join('');
+  }
+
+  function refreshStats(){
+    fetch('/stats').then(r=>r.json()).then(d=>{
+      document.getElementById('s-customers').textContent = d.customers;
+      document.getElementById('s-orders').textContent    = d.orders;
+      document.getElementById('s-revenue').textContent   = '₹'+d.revenue.toLocaleString('en-IN');
+    });
+  }
+
+  function exportCSV(){
+    if(!lastColumns.length) return;
+    let csv = lastColumns.join(',') + '\n';
+    lastRows.forEach(row => {
+      csv += row.map(cell => `"${cell === null ? '' : cell}"`).join(',') + '\n';
+    });
+    const blob = new Blob([csv], {type:'text/csv'});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'query_result.csv'; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  document.getElementById('questionInput').addEventListener('keydown', e=>{
+    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); runQuery(); }
+  });
+</script>
+</body>
+</html>
