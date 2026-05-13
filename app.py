@@ -12,11 +12,11 @@ app = Flask(__name__)
 # ─────────────────────────────────────────
 
 DB_CONFIG = {
-    "host":     os.environ.get("DB_HOST",     "localhost"),
+    "host":     os.environ.get("DB_HOST",     "yamabiko.proxy.rlwy.net"),
     "user":     os.environ.get("DB_USER",     "root"),
     "password": os.environ.get("DB_PASSWORD", ""),
-    "database": os.environ.get("DB_NAME",     "sql_assistant"),
-    "port":     int(os.environ.get("DB_PORT", 3306))
+    "database": os.environ.get("DB_NAME",     "railway"),
+    "port":     int(os.environ.get("DB_PORT", 23736))
 }
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
